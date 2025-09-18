@@ -1,0 +1,14 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /user/
+Disallow: /dashboard/
+Disallow: /password/
+Disallow: /api/
+
+Allow: /
+
+# XML Sitemap files
+Sitemap: https://www.realvictorygroups.com/sitemap.xml
+Sitemap: https://www.realvictorygroups.com/blog-sitemap.xml
