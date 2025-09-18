@@ -12,7 +12,10 @@
                 </div>
 
 
-
+<div class="hidden sm:flex sm:items-center sm:ml-6">
+    {{-- ...other nav items... --}}
+    @include('partials.topbar')   {{-- 🔔 bell + badge + audio + meId --}}
+</div>
                 <!-- Navigation -->
                 <div class="hidden sm:flex sm:items-center sm:ms-10 text-sm font-medium text-gray-700 space-x-6"
                     x-data="{ open: false }">
@@ -27,6 +30,7 @@
                     </x-nav-link>
 
 
+
                     @can('chat-anyone')
                         <x-nav-link :href="route('dm.people')" :active="request()->routeIs('dm.people')">
                             👥 People
@@ -39,7 +43,13 @@
                         </x-nav-link>
                     @endcan
 
-
+ @can('chat-broadcast')
+      <a href="{{ route('dm.broadcast.create') }}"
+         class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 {{ request()->routeIs('dm.broadcast.*') ? 'bg-gray-50 font-semibold' : '' }}">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Broadcast Message</span>
+      </a>
+    @endcan
 
 
                     <!-- Dropdown for Roles, Permissions, Users -->

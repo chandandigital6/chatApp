@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\BroadcastDMController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\DmAccessController;
 use App\Http\Controllers\HomeController;
@@ -34,7 +35,13 @@ Route::middleware(['auth','role:Super Admin'])->group(function () {
     
 });
 
-
+Route::middleware(['auth','can:chat-broadcast']) // ← apni policy/permission lagao
+    ->group(function () {
+        Route::get('/admin/dm/broadcast', [BroadcastDMController::class, 'create'])
+            ->name('dm.broadcast.create');
+        Route::post('/admin/dm/broadcast', [BroadcastDMController::class, 'store'])
+            ->name('dm.broadcast.store');
+});
 
 
 Route::middleware('auth')->group(function () {

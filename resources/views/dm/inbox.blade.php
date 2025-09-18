@@ -6,6 +6,17 @@
     </div>
   </x-slot>
 
+  {{-- Reset global badge when inbox opens --}}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const badge = document.getElementById('inboxBadge');
+      if (badge) {
+        badge.textContent = '0';
+        badge.classList.add('hidden');
+      }
+    });
+  </script>
+
   <div class="py-10">
     <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
       <div class="bg-white shadow-xl rounded-2xl p-6 border">

@@ -13,7 +13,7 @@
         </div>
     </x-slot>
 
-  
+
 
     <div class="py-6">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
@@ -136,6 +136,35 @@
             background: #c7cad1;
         }
     </style>
+
+    <script>
+        function showToast(text) {
+  const t = document.createElement('div');
+  t.className = 'fixed right-4 bottom-4 bg-black text-white text-sm px-3 py-2 rounded-lg shadow z-50';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(()=> t.remove(), 3500);
+}
+
+function playDing() {
+  const ding = document.getElementById('dm-ding');
+  if (!ding) return;
+  ding.play().catch(()=>{ /* autoplay blocked? will be primed below */ });
+}
+
+// 🔊 First user gesture par audio ko prime karo (once)
+(function primeAudioOnce(){
+  const ding = document.getElementById('dm-ding');
+  if (!ding) return;
+  const unlock = () => {
+    ding.play().then(()=> ding.pause()).catch(()=>{});
+    window.removeEventListener('click', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('click', unlock, { once:true });
+  window.addEventListener('keydown', unlock, { once:true });
+})();
+    </script>
 
     <script type="module">
         const myId = @json(auth()->id());

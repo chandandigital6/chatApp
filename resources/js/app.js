@@ -1,4 +1,5 @@
 import './bootstrap';
+import './dm-realtime';
 
 import Alpine from 'alpinejs';
 

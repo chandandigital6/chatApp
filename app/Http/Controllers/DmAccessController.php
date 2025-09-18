@@ -30,7 +30,7 @@ class DmAccessController extends Controller
 
     return view('admin.people', compact('users','q'));
 
-        // return view('admin.people', compact('users', 'q', 'canChatAnyone'));
+      
     }
     
    public function edit(User $user)

@@ -58,19 +58,7 @@ class DirectMessageController extends Controller
     }
 
 
-// public function store(Request $request, User $user)
-// {
-//     abort_unless(Gate::allows('dm-start', $user->id), 403);
 
-//     $data = $request->validate(['body'=>'required|string|max:3000']);
-//     $msg = Message::create([
-//         'sender_id'=>$request->user()->id,
-//         'receiver_id'=>$user->id,
-//         'body'=>$data['body'],
-//     ]);
-//     broadcast(new DirectMessageSent($msg->load('sender')))->toOthers();
-//     return response()->json(['ok'=>true,'message'=>$msg]);
-// }
 
 
 
