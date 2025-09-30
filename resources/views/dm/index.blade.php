@@ -6,10 +6,10 @@
             <h2 class="font-bold text-2xl text-gray-800">
                 Direct Chat — {{ $peer->name }}
             </h2>
-            <a href="{{ route('user.index') }}"
+            {{-- <a href="{{ route('user.index') }}"
                 class="px-5 py-2 bg-gradient-to-r from-[#c21108] to-[#000308] text-white font-semibold rounded-lg shadow-md hover:from-[#000308] hover:to-[#c21108] transition">
                 ← Back to Users
-            </a>
+            </a> --}}
         </div>
     </x-slot>
 
