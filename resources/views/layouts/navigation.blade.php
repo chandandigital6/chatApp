@@ -12,10 +12,10 @@
                 </div>
 
 
-<div class="hidden sm:flex sm:items-center sm:ml-6">
-    {{-- ...other nav items... --}}
-    @include('partials.topbar')   {{-- 🔔 bell + badge + audio + meId --}}
-</div>
+                <div class="hidden sm:flex sm:items-center sm:ml-6">
+                    {{-- ...other nav items... --}}
+                    @include('partials.topbar') {{-- 🔔 bell + badge + audio + meId --}}
+                </div>
                 <!-- Navigation -->
                 <div class="hidden sm:flex sm:items-center sm:ms-10 text-sm font-medium text-gray-700 space-x-6"
                     x-data="{ open: false }">
@@ -43,13 +43,13 @@
                         </x-nav-link>
                     @endcan
 
- @can('chat-broadcast')
-      <a href="{{ route('dm.broadcast.create') }}"
-         class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 {{ request()->routeIs('dm.broadcast.*') ? 'bg-gray-50 font-semibold' : '' }}">
-        <i class="fa-solid fa-bullhorn"></i>
-        <span>Broadcast Message</span>
-      </a>
-    @endcan
+                    @can('chat-broadcast')
+                        <a href="{{ route('dm.broadcast.create') }}"
+                            class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 {{ request()->routeIs('dm.broadcast.*') ? 'bg-gray-50 font-semibold' : '' }}">
+                            <i class="fa-solid fa-bullhorn"></i>
+                            <span>Broadcast Message</span>
+                        </a>
+                    @endcan
 
 
                     <!-- Dropdown for Roles, Permissions, Users -->
@@ -90,8 +90,8 @@
 
 
 
-            
-                  
+
+
 
 
                 </div>
@@ -153,37 +153,36 @@
 
     <!-- Mobile Menu -->
     <div :class="{ 'block': open, 'hidden': !open }" class="sm:hidden hidden bg-white z-50" id="mobile-menu">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                <i class="fas fa-tachometer-alt mr-1"></i> {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-
-            @can('view permission')
-                <x-responsive-nav-link :href="route('permission.index')" :active="request()->routeIs('permission.index')">
-                    <i class="fas fa-key mr-1"></i> Permissions
-                </x-responsive-nav-link>
-            @endcan
-
-            @can('view roles')
-                <x-responsive-nav-link :href="route('role.index')" :active="request()->routeIs('role.index')">
-                    <i class="fas fa-user-shield mr-1"></i> Roles
-                </x-responsive-nav-link>
-            @endcan
-
-            @can('view users')
-                <x-responsive-nav-link :href="route('user.index')" :active="request()->routeIs('user.index')">
-                    <i class="fas fa-users mr-1"></i> Users
-                </x-responsive-nav-link>
-            @endcan
-
-
-        </div>
+       
 
         <!-- Mobile Profile Section -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                 <x-nav-link :href="route('dm.admin')" :active="request()->routeIs('dm.admin')">
+                        <i class="fas fa-tachometer-alt mr-1"></i> support chat
+                    </x-nav-link>
+
+                     @can('chat-anyone')
+                        <x-nav-link :href="route('dm.people')" :active="request()->routeIs('dm.people')">
+                            👥 People
+                        </x-nav-link>
+                    @endcan
+
+                    @can('inbox-access')
+                        <x-nav-link :href="route('dm.inbox')" :active="request()->routeIs('dm.inbox')">
+                            ✉️ Inbox
+                        </x-nav-link>
+                    @endcan
+
+                    @can('chat-broadcast')
+                        <a href="{{ route('dm.broadcast.create') }}"
+                            class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 {{ request()->routeIs('dm.broadcast.*') ? 'bg-gray-50 font-semibold' : '' }}">
+                            <i class="fa-solid fa-bullhorn"></i>
+                            <span>Broadcast Message</span>
+                        </a>
+                    @endcan
             </div>
 
             <div class="mt-3 space-y-1">
