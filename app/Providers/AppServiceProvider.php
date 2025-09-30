@@ -23,50 +23,51 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot(): void
-    {
-        Gate::before(function ($user, $ability) {
-            return $user->hasRole('Super Admin') ? true : null;
-        });
+{
+    // Super Admin = full access (optional but convenient)
+    Gate::before(function ($user, $ability) {
+        return method_exists($user, 'hasRole') && $user->hasRole('Super Admin') ? true : null;
+    });
 
- Gate::define('dm-start', function ($user, $peerId) {
-            if ((int) $user->id === (int) $peerId) {
-                return false;
-            }
+    Gate::define('dm-start', function ($user, $peerId) {
+        $peerId = (int) $peerId;
 
-            // Super Admins can DM anyone
-            if (method_exists($user, 'hasRole') && $user->hasRole('Super Admin')) {
+        // Self-DM block
+        if ((int) $user->id === $peerId) {
+            return false;
+        }
+
+        // 1) If PEER is Super Admin → always allow (so Support Chat sab ke liye open ho)
+        $superAdminRole = Role::where('name', 'Super Admin')->first();
+        if ($superAdminRole) {
+            $superAdminIds = $superAdminRole->users()->pluck('id')->all();
+            if (in_array($peerId, $superAdminIds, true)) {
                 return true;
             }
+        }
 
-            // Global permission
-            if ($user->can('chat-anyone')) {
-                return true;
-            }
+        // (Optional) env override — agar aap ek fixed Support Admin ID rakhte ho
+        $envAdminId = (int) env('CHAT_SUPER_ADMIN_ID', 0);
+        if ($envAdminId && $peerId === $envAdminId) {
+            return true;
+        }
 
-            // (Optional) allow DM to Super Admin always
-            $superAdminId = Role::where('name', 'Super Admin')->first()?->users()->value('id');
-            if ($superAdminId && (int) $peerId === (int) $superAdminId) {
-                return true;
-            }
+        // 2) Global power: 'chat-anyone'
+        if ($user->can('chat-anyone')) {
+            return true;
+        }
 
-            // Pair-wise allow list
-            return DmAllowed::where('user_id', $user->id)
-                ->where('peer_id', $peerId)
-                ->exists();
-        });
+        // 3) Pair-wise allow list
+        if (DmAllowed::where('user_id', $user->id)->where('peer_id', $peerId)->exists()) {
+            return true;
+        }
 
-         Gate::define('dm-start', function ($user, $peerId) {
-        if ((int)$user->id === (int)$peerId) return false;
+        // 4) Reply allowed: agar peer→user ne pehle kabhi msg bheja ho
+        if (Message::where('sender_id', $peerId)->where('receiver_id', $user->id)->exists()) {
+            return true;
+        }
 
-        // Global power: chat-anyone ⇒ किसी से भी DM शुरू कर सकते हैं
-        if ($user->can('chat-anyone')) return true;
-
-        // Pair-wise allow list
-        if (DmAllowed::where('user_id',$user->id)->where('peer_id',$peerId)->exists()) return true;
-
-        // ✅ Reply allowed: अगर सामने वाले (peer) ने पहले कभी आपको msg भेजा है
-        if (Message::where('sender_id',$peerId)->where('receiver_id',$user->id)->exists()) return true;
-
+        // ❌ otherwise block
         return false;
     });
         
