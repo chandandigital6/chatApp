@@ -59,11 +59,6 @@ class DirectMessageController extends Controller
 
 
 
-
-
-
-  
-
 public function store(Request $request, User $user)
 {
     abort_unless(Gate::allows('dm-start', $user->id), 403);

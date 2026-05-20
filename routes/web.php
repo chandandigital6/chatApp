@@ -4,14 +4,12 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\BroadcastDMController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\DmAccessController;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
-use Faker\Provider\ar_EG\Payment;
 use Illuminate\Database\Query\IndexHint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -19,9 +17,6 @@ use Illuminate\Support\Facades\Route;
 
 
 
-
-
-// frontend routes
 Route::view('/', 'welcome')->name('home');
 
 
@@ -35,7 +30,7 @@ Route::middleware(['auth','role:Super Admin'])->group(function () {
     
 });
 
-Route::middleware(['auth','can:chat-broadcast']) // ← apni policy/permission lagao
+Route::middleware(['auth','can:chat-broadcast'])
     ->group(function () {
         Route::get('/admin/dm/broadcast', [BroadcastDMController::class, 'create'])
             ->name('dm.broadcast.create');
@@ -62,7 +57,7 @@ Route::middleware('auth')->group(function () {
     })->name('dm.admin');
 });
 
-// Routes that require authentication
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
