@@ -2,8 +2,10 @@
 use App\Http\Controllers\Api\AuthApiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ChatApiController;
+use Illuminate\Support\Facades\Broadcast;
 
 
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Route::post('/register', [AuthApiController::class, 'register']);
 Route::post('/login', [AuthApiController::class, 'login']);
