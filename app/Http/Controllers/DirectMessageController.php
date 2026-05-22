@@ -58,8 +58,91 @@ class DirectMessageController extends Controller
     }
 
 
+    public function store(Request $request, User $user)
+{
+    abort_unless(Gate::allows('dm-start', $user->id), 403);
 
-public function store(Request $request, User $user)
+    $data = $request->validate([
+        'body' => 'nullable|string|max:3000',
+        'attachments.*' => 'nullable|file|max:25600|mimetypes:image/jpeg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/webm,video/quicktime',
+    ]);
+
+    if (!$request->hasFile('attachments') && blank($data['body'] ?? null)) {
+        return response()->json([
+            'ok' => false,
+            'message' => 'Nothing to send'
+        ], 422);
+    }
+
+    $msg = Message::create([
+        'sender_id'   => $request->user()->id,
+        'receiver_id' => $user->id,
+        'body'        => $data['body'] ?? '',
+    ]);
+
+    if ($request->hasFile('attachments')) {
+        foreach ($request->file('attachments') as $file) {
+            if (!$file || !$file->isValid()) continue;
+
+            if (strtolower($file->getClientOriginalExtension()) === 'svg') continue;
+
+            $path = $file->store('chat', 'public');
+            $mime = $file->getMimeType();
+
+            $width = $height = null;
+
+            if (str_starts_with($mime, 'image/')) {
+                try {
+                    [$width, $height] = getimagesize($file->getRealPath());
+                } catch (\Throwable $e) {}
+            }
+
+            MessageAttachment::create([
+                'message_id'    => $msg->id,
+                'path'          => $path,
+                'mime'          => $mime,
+                'size'          => $file->getSize(),
+                'original_name' => $file->getClientOriginalName(),
+                'width'         => $width,
+                'height'        => $height,
+                'duration'      => null,
+            ]);
+        }
+    }
+
+    $msg->load('sender:id,name', 'attachments');
+
+    $payload = [
+        'id' => $msg->id,
+        'sender_id' => $msg->sender_id,
+        'receiver_id' => $msg->receiver_id,
+        'body' => $msg->body,
+        'created_at' => $msg->created_at->toISOString(),
+        'sender' => [
+            'id' => $msg->sender->id,
+            'name' => $msg->sender->name,
+        ],
+        'attachments' => $msg->attachments->map(function ($att) {
+            return [
+                'id' => $att->id,
+                'url' => asset('storage/' . $att->path),
+                'mime' => $att->mime,
+                'name' => $att->original_name,
+                'size' => $att->size,
+            ];
+        })->values(),
+    ];
+
+    broadcast(new DirectMessageSent($msg))->toOthers();
+
+    return response()->json([
+        'ok' => true,
+        'message' => $payload,
+    ]);
+}
+
+
+public function storeold(Request $request, User $user)
 {
     abort_unless(Gate::allows('dm-start', $user->id), 403);
 

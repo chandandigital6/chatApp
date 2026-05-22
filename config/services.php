@@ -39,4 +39,8 @@ return [
     'server_key' => env('FCM_SERVER_KEY'),
 ],
 
+'firebase' => [
+    'credentials' => base_path(env('FIREBASE_CREDENTIALS')),
+],
+
 ];

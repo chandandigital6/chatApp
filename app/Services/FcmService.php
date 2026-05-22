@@ -2,29 +2,28 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
 
 class FcmService
 {
-    public static function send($token, $title, $body, $data = [])
+    public static function sendToUser($user, string $title, string $body, array $data = []): bool
     {
-        if (!$token) {
+        if (!$user || blank($user->fcm_token)) {
             return false;
         }
 
-        $serverKey = config('services.fcm.server_key');
+        $messaging = (new Factory)
+            ->withServiceAccount(config('services.firebase.credentials'))
+            ->createMessaging();
 
-        return Http::withHeaders([
-            'Authorization' => 'key=' . $serverKey,
-            'Content-Type' => 'application/json',
-        ])->post('https://fcm.googleapis.com/fcm/send', [
-            'to' => $token,
-            'notification' => [
-                'title' => $title,
-                'body' => $body,
-                'sound' => 'default',
-            ],
-            'data' => $data,
-        ]);
+        $message = CloudMessage::withTarget('token', $user->fcm_token)
+            ->withNotification(Notification::create($title, $body))
+            ->withData(array_map('strval', $data));
+
+        $messaging->send($message);
+
+        return true;
     }
 }

@@ -9,6 +9,7 @@ use App\Models\MessageAttachment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\FcmService;
+use Illuminate\Support\Facades\Log;
 
 class ChatApiController extends Controller
 {
@@ -138,88 +139,192 @@ class ChatApiController extends Controller
         ]);
     }
 
+
     public function send(Request $request, User $user)
-    {
-        // dd($request->all());
-        $authUser = $request->user();
+{
+    $authUser = $request->user();
 
-        if (!$this->canChatWith($authUser, $user)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'You are not allowed to send message to this user.',
-            ], 403);
-        }
-
-        $data = $request->validate([
-            'body' => 'nullable|string|max:3000',
-             'attachments.*' => 'nullable|file|max:25600|mimetypes:image/jpeg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/webm,video/quicktime',
-        ]);
-
-        if (!$request->hasFile('attachments') && blank($data['body'] ?? null)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Nothing to send',
-            ], 422);
-        }
-
-        $msg = Message::create([
-            'sender_id' => $authUser->id,
-            'receiver_id' => $user->id,
-            'body' => $data['body'] ?? '',
-        ]);
-
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                if (!$file->isValid()) {
-                    continue;
-                }
-
-                if (strtolower($file->getClientOriginalExtension()) === 'svg') {
-                    continue;
-                }
-
-                $path = $file->store('chat', 'public');
-                $mime = $file->getMimeType();
-
-                $width = null;
-                $height = null;
-
-                if (str_starts_with($mime, 'image/')) {
-                    try {
-                        [$width, $height] = getimagesize($file->getRealPath());
-                    } catch (\Throwable $e) {
-                        $width = null;
-                        $height = null;
-                    }
-                }
-
-                MessageAttachment::create([
-                    'message_id' => $msg->id,
-                    'path' => $path,
-                    'mime' => $mime,
-                    'size' => $file->getSize(),
-                    'original_name' => $file->getClientOriginalName(),
-                    'width' => $width,
-                    'height' => $height,
-                    'duration' => null,
-                ]);
-            }
-        }
-
-        $msg->load([
-            'sender:id,name,email',
-            'receiver:id,name,email',
-            'attachments'
-        ]);
-
-        broadcast(new DirectMessageSent($msg))->toOthers();
-
+    if (!$this->canChatWith($authUser, $user)) {
         return response()->json([
-            'status' => true,
-            'message' => 'Message sent successfully',
-            'data' => $msg,
+            'status' => false,
+            'message' => 'You are not allowed to send message to this user.',
+        ], 403);
+    }
+
+    $data = $request->validate([
+        'body' => 'nullable|string|max:3000',
+        'attachments' => 'nullable|array',
+        'attachments.*' => 'nullable|file|max:25600|mimes:jpg,jpeg,png,webp,gif,pdf,mp4,webm,mov',
+    ]);
+
+    if (!$request->hasFile('attachments') && blank($data['body'] ?? null)) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Nothing to send',
+        ], 422);
+    }
+
+    $msg = Message::create([
+        'sender_id' => $authUser->id,
+        'receiver_id' => $user->id,
+        'body' => $data['body'] ?? '',
+    ]);
+
+    if ($request->hasFile('attachments')) {
+        foreach ($request->file('attachments') as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+
+            if (strtolower($file->getClientOriginalExtension()) === 'svg') {
+                continue;
+            }
+
+            $path = $file->store('chat', 'public');
+            $mime = $file->getMimeType();
+
+            $width = null;
+            $height = null;
+
+            if (str_starts_with($mime, 'image/')) {
+                try {
+                    [$width, $height] = getimagesize($file->getRealPath());
+                } catch (\Throwable $e) {
+                    $width = null;
+                    $height = null;
+                }
+            }
+
+            MessageAttachment::create([
+                'message_id' => $msg->id,
+                'path' => $path,
+                'mime' => $mime,
+                'size' => $file->getSize(),
+                'original_name' => $file->getClientOriginalName(),
+                'width' => $width,
+                'height' => $height,
+                'duration' => null,
+            ]);
+        }
+    }
+
+    $msg->load([
+        'sender:id,name,email',
+        'receiver:id,name,email,fcm_token',
+        'attachments'
+    ]);
+
+    broadcast(new DirectMessageSent($msg))->toOthers();
+
+    try {
+        FcmService::sendToUser(
+            $user,
+            $authUser->name ?? 'New Message',
+            filled($msg->body) ? $msg->body : 'Sent an attachment',
+            [
+                'type' => 'chat_message',
+                'message_id' => $msg->id,
+                'sender_id' => $authUser->id,
+                'receiver_id' => $user->id,
+            ]
+        );
+    } catch (\Throwable $e) {
+        Log::error('FCM chat notification failed', [
+            'error' => $e->getMessage(),
+            'receiver_id' => $user->id,
         ]);
     }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Message sent successfully',
+        'data' => $msg,
+    ]);
+}
+
+
+    // public function send(Request $request, User $user)
+    // {
+    //     // dd($request->all());
+    //     $authUser = $request->user();
+
+    //     if (!$this->canChatWith($authUser, $user)) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'You are not allowed to send message to this user.',
+    //         ], 403);
+    //     }
+
+    //     $data = $request->validate([
+    //         'body' => 'nullable|string|max:3000',
+    //          'attachments.*' => 'nullable|file|max:25600|mimetypes:image/jpeg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/webm,video/quicktime',
+    //     ]);
+
+    //     if (!$request->hasFile('attachments') && blank($data['body'] ?? null)) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Nothing to send',
+    //         ], 422);
+    //     }
+
+    //     $msg = Message::create([
+    //         'sender_id' => $authUser->id,
+    //         'receiver_id' => $user->id,
+    //         'body' => $data['body'] ?? '',
+    //     ]);
+
+    //     if ($request->hasFile('attachments')) {
+    //         foreach ($request->file('attachments') as $file) {
+    //             if (!$file->isValid()) {
+    //                 continue;
+    //             }
+
+    //             if (strtolower($file->getClientOriginalExtension()) === 'svg') {
+    //                 continue;
+    //             }
+
+    //             $path = $file->store('chat', 'public');
+    //             $mime = $file->getMimeType();
+
+    //             $width = null;
+    //             $height = null;
+
+    //             if (str_starts_with($mime, 'image/')) {
+    //                 try {
+    //                     [$width, $height] = getimagesize($file->getRealPath());
+    //                 } catch (\Throwable $e) {
+    //                     $width = null;
+    //                     $height = null;
+    //                 }
+    //             }
+
+    //             MessageAttachment::create([
+    //                 'message_id' => $msg->id,
+    //                 'path' => $path,
+    //                 'mime' => $mime,
+    //                 'size' => $file->getSize(),
+    //                 'original_name' => $file->getClientOriginalName(),
+    //                 'width' => $width,
+    //                 'height' => $height,
+    //                 'duration' => null,
+    //             ]);
+    //         }
+    //     }
+
+    //     $msg->load([
+    //         'sender:id,name,email',
+    //         'receiver:id,name,email',
+    //         'attachments'
+    //     ]);
+
+    //     broadcast(new DirectMessageSent($msg))->toOthers();
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Message sent successfully',
+    //         'data' => $msg,
+    //     ]);
+    // }
 
     
 }

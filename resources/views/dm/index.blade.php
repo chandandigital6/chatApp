@@ -225,15 +225,26 @@ function playDing() {
 
             try {
                 const fd = new FormData(form); // includes _token + attachments[]
-                const res = await fetch(postUrl, {
-                    method: 'POST',
-                    body: fd
-                });
-                const data = await res.json();
+              const res = await fetch(postUrl, {
+    method: 'POST',
+    body: fd,
+    headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+    }
+});
 
-                if (!res.ok || !data?.message) {
-                    throw new Error(data?.message || 'Send failed');
-                }
+let data = null;
+
+try {
+    data = await res.json();
+} catch (err) {
+    throw new Error('Server JSON response nahi de raha');
+}
+
+if (!res.ok || !data?.ok || !data?.message) {
+    throw new Error(data?.message || 'Send failed');
+}
 
                 append(true, 'You', data.message.body, data.message.created_at, data.message.attachments || []);
                 bodyEl.value = '';
