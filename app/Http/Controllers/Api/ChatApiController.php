@@ -97,7 +97,7 @@ class ChatApiController extends Controller
         ]);
     }
 
-    public function messages(Request $request, User $user)
+    public function messagesodl(Request $request, User $user)
     {
         $authUser = $request->user();
 
@@ -139,6 +139,52 @@ class ChatApiController extends Controller
         ]);
     }
 
+
+
+    public function messages(Request $request, $userId)
+{
+    $me = auth()->id();
+
+    $user = User::findOrFail($userId);
+
+    $messages = Message::with([
+        'sender:id,name,email',
+        'receiver:id,name,email',
+        'attachments'
+    ])
+    ->where(function ($q) use ($me, $userId) {
+        $q->where('sender_id', $me)
+          ->where('receiver_id', $userId);
+    })
+    ->orWhere(function ($q) use ($me, $userId) {
+        $q->where('sender_id', $userId)
+          ->where('receiver_id', $me);
+    })
+
+    // IMPORTANT FIX
+    ->orderByDesc('id')
+
+    // latest 50 messages
+    ->paginate(50);
+
+    // reverse back for proper chat UI order
+    $messages->setCollection(
+        $messages->getCollection()
+            ->reverse()
+            ->values()
+    );
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Messages fetched successfully',
+        'peer' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ],
+        'data' => $messages,
+    ]);
+}
 
     public function send(Request $request, User $user)
 {
